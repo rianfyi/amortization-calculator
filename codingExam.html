@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amortization Calculator</title>
+  <style>
+    body { margin: 20px; background: #f4f4f4; color: #222; font: 16px Arial, sans-serif; }
+    main { max-width: 900px; margin: auto; }
+    section { margin: 16px 0; padding: 18px; background: white; border: 1px solid #ccc; }
+    button { padding: 10px 16px; background: #4b6b88; color: white; border: 0; cursor: pointer; }
+    button:hover { background: #38536b; }
+    #summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+    #summary p { margin: 0; padding: 10px; background: #eee; }
+    .table-wrap { max-height: 450px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    thead { position: sticky; top: 0; background: #ddd; }
+    #ending-message { padding: 10px; background: #eee; }
+    @media (max-width: 520px) { body { margin: 10px; } section { padding: 12px; } th, td { padding: 6px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p>Name: Rian Atri</p>
+    <p>Email: ratri@my.waketech.edu</p>
+    <p>Date: October 19, 2026</p>
+
+    <h1>Amortization Calculator</h1>
+    <p>Enter a loan amount without commas. The annual interest rate is 5.75%.</p>
+    <button id="Button1" type="button">Calculate loan</button>
+    <p id="status">Click the button to enter your loan details.</p>
+
+    <section id="results" hidden>
+      <h2>Loan summary</h2>
+      <div id="summary"></div>
+      <h2>Monthly balance</h2>
+      <p>The balance starts at the total scheduled payments and goes down by the monthly payment.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Month</th><th>Payment</th><th>Balance</th></tr>
+          </thead>
+          <tbody id="schedule-body"></tbody>
+        </table>
+      </div>
+      <p id="ending-message" hidden></p>
+    </section>
+  </main>
+
+  <script>
+    const interestRate = 0.0575;
+    const button = document.getElementById("Button1");
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+    const summary = document.getElementById("summary");
+    const rows = document.getElementById("schedule-body");
+    const ending = document.getElementById("ending-message");
+
+    button.addEventListener("click", function () {
+      results.hidden = true;
+      summary.innerHTML = "";
+      rows.innerHTML = "";
+      ending.hidden = true;
+
+      const amountInput = prompt("Enter the loan amount in dollars, without commas:");
+      if (amountInput === null) { status.textContent = "Calculation canceled."; return; }
+      const amount = Number(amountInput);
+      const amountCents = Math.round(amount * 100);
+      if (!Number.isFinite(amount) || amount <= 0 || !Number.isSafeInteger(amountCents) || amountCents < 1) {
+        alert("Please enter a positive loan amount without commas.");
+        status.textContent = "Enter a positive loan amount to continue.";
+        return;
+      }
+
+      const termInput = prompt("Enter the loan term in years: 15 or 30.");
+      if (termInput === null) { status.textContent = "Calculation canceled."; return; }
+      const termYears = Number(termInput);
+      if (termYears !== 15 && termYears !== 30) {
+        alert("Invalid loan term. Enter 15 or 30 years.");
+        status.textContent = "The loan term must be 15 or 30 years.";
+        return;
+      }
+
+      const loanAmount = amountCents / 100;
+      const months = termYears * 12;
+      const monthlyPayment = (((interestRate / 12) * loanAmount) / (1 - Math.pow(1 + interestRate / 12, -months))).toFixed(2);
+      const paymentCents = Math.round(monthlyPayment * 100);
+      const totalInterest = monthlyPayment * months - loanAmount;
+      const totalLoan = loanAmount + totalInterest;
+      const totalCents = paymentCents * months;
+      if (!Number.isSafeInteger(totalCents)) {
+        alert("That loan amount is too large to calculate safely.");
+        status.textContent = "The loan amount is too large to calculate safely.";
+        return;
+      }
+
+      const money = value => "$" + value.toFixed(2);
+      summary.innerHTML = "<p>Mortgage term: " + termYears + " years</p>" +
+        "<p>Interest rate: " + (interestRate * 100).toFixed(2) + "%</p>" +
+        "<p>Loan principal: " + money(loanAmount) + "</p>" +
+        "<p>Mortgage amount: " + money(totalLoan) + "</p>" +
+        "<p>Total interest: " + money(totalInterest) + "</p>" +
+        "<p>Total mortgage: " + money(totalLoan) + "</p>" +
+        "<p>Monthly payment: " + money(Number(monthlyPayment)) + "</p>";
+
+      let balance = totalCents;
+      for (let month = 1; month <= months; month++) {
+        balance = Math.max(0, balance - paymentCents);
+        if (month === months) balance = 0;
+        rows.innerHTML += "<tr><td>" + month + "</td><td>" + money(paymentCents / 100) + "</td><td>$" + (balance / 100).toFixed(2) + "</td></tr>";
+      }
+
+      if (balance === 0) {
+        ending.textContent = "Ending... This is the Ending Amortization Calculator. The balance is $0.00.";
+        ending.hidden = false;
+      }
+      results.hidden = false;
+      status.textContent = "Schedule created with " + months + " monthly payments.";
+    });
+  </script>
+</body>
+</html>
